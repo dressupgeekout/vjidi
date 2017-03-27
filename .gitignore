@@ -1,0 +1,8 @@
+*.core
+*.debug
+*.o
+*.swo
+*.swp
+.gdbinit
+obj/**
+vjidi
