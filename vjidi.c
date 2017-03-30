@@ -119,7 +119,7 @@ usage(void)
 static bool
 setup_events(void)
 {
-	SDL_Init(SDL_INIT_EVERYTHING); // XXX not really
+	SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO|SDL_INIT_EVENTS);
 	return true;
 }
 
