@@ -159,6 +159,7 @@ static bool
 setup_events(void)
 {
 	SDL_Init(SDL_INIT_EVERYTHING); // XXX not really
+	return true;
 }
 
 static bool
