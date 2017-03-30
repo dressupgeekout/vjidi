@@ -40,6 +40,7 @@ static void usage(void);
 static bool setup_events(void);
 static bool setup_script_interpreter(void);
 static void handle_sigint(int sig);
+static void mainloop(void);
 static void cleanup(void);
 
 /* */
@@ -65,47 +66,7 @@ main(int argc, char *argv[])
 	if ((midi_event = malloc(sizeof(seq_event_t))) == NULL)
 		goto fail;
 
-	for (;;) {
-		read(sequencer_fd, midi_event, sizeof(seq_event_t));
-
-		switch (midi_event->tag) {
-		case SEQ_CHN_VOICE:
-			switch (midi_event->voice.op) {
-			case MIDI_NOTEON:
-				lua_getglobal(L, "onnotedown");
-				pushmidievent(L, midi_event);
-				lua_pcall(L, 1, 0, 0);
-				if (debug)
-					warnx("ON\tkey=%d velocity=%d", midi_event->voice.key, midi_event->c_NOTEON.velocity);
-				break;
-			case MIDI_NOTEOFF:
-				lua_getglobal(L, "onnoteup");
-				pushmidievent(L, midi_event);
-				lua_pcall(L, 1, 0, 0);
-				if (debug)
-					warnx("OFF\tkey=%d", midi_event->voice.key);
-				break;
-			}
-			break;
-		case SEQ_CHN_COMMON:
-			switch (midi_event->common.op) {
-			case MIDI_CTL_CHANGE:
-				lua_getglobal(L, "oncontrol");
-				pushmidievent(L, midi_event);
-				lua_pcall(L, 1, 0, 0);
-				if (debug)
-					warnx("CTL_CHANGE\tdevice=%u channel=%u controller=%u value=%u",
-						midi_event->c_CTL_CHANGE.device,
-						midi_event->c_CTL_CHANGE.channel,
-						midi_event->c_CTL_CHANGE.controller,
-						midi_event->c_CTL_CHANGE.value);
-				break;
-			}
-			break;
-		default:
-			warnx("(other)");
-		}
-	}
+	mainloop();
 
 success:
 	cleanup();
@@ -186,6 +147,51 @@ handle_sigint(int sig)
 {
 	cleanup();
 	exit(EXIT_SUCCESS);
+}
+
+static void
+mainloop(void) {
+	for (;;) {
+		read(sequencer_fd, midi_event, sizeof(seq_event_t));
+
+		switch (midi_event->tag) {
+		case SEQ_CHN_VOICE:
+			switch (midi_event->voice.op) {
+			case MIDI_NOTEON:
+				lua_getglobal(L, "onnotedown");
+				pushmidievent(L, midi_event);
+				lua_pcall(L, 1, 0, 0);
+				if (debug)
+					warnx("ON\tkey=%d velocity=%d", midi_event->voice.key, midi_event->c_NOTEON.velocity);
+				break;
+			case MIDI_NOTEOFF:
+				lua_getglobal(L, "onnoteup");
+				pushmidievent(L, midi_event);
+				lua_pcall(L, 1, 0, 0);
+				if (debug)
+					warnx("OFF\tkey=%d", midi_event->voice.key);
+				break;
+			}
+			break;
+		case SEQ_CHN_COMMON:
+			switch (midi_event->common.op) {
+			case MIDI_CTL_CHANGE:
+				lua_getglobal(L, "oncontrol");
+				pushmidievent(L, midi_event);
+				lua_pcall(L, 1, 0, 0);
+				if (debug)
+					warnx("CTL_CHANGE\tdevice=%u channel=%u controller=%u value=%u",
+						midi_event->c_CTL_CHANGE.device,
+						midi_event->c_CTL_CHANGE.channel,
+						midi_event->c_CTL_CHANGE.controller,
+						midi_event->c_CTL_CHANGE.value);
+				break;
+			}
+			break;
+		default:
+			warnx("(other)");
+		}
+	}
 }
 
 static void
