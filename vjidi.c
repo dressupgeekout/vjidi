@@ -15,6 +15,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include <SDL2/SDL.h>
+
 #include <sys/types.h>
 #include <sys/midiio.h>
 
@@ -35,6 +37,7 @@ static void pushmidievent(lua_State *L, const seq_event_t *ev);
 
 static int parse_options(int argc, char *argv[]);
 static void usage(void);
+static bool setup_events(void);
 static bool setup_script_interpreter(void);
 static void handle_sigint(int sig);
 static void cleanup(void);
@@ -50,6 +53,9 @@ main(int argc, char *argv[])
 
 	if ((rv = parse_options(argc, argv)) >= 0)
 		return rv;
+
+	if (!setup_events())
+		goto fail;
 
 	if (!setup_script_interpreter())
 		goto fail;
@@ -150,6 +156,12 @@ usage(void)
 }
 
 static bool
+setup_events(void)
+{
+	SDL_Init(SDL_INIT_EVERYTHING); // XXX not really
+}
+
+static bool
 setup_script_interpreter(void)
 {
 	if ((L = luaL_newstate()) == NULL)
@@ -178,6 +190,7 @@ handle_sigint(int sig)
 static void
 cleanup(void)
 {
+	SDL_Quit();
 	lua_close(L);
 	close(sequencer_fd);
 	free(midi_event);
